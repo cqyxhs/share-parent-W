@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.share.user.mapper.UserInfoMapper">
+
+    <resultMap type="UserInfo" id="UserInfoResult" autoMapping="true">
+    </resultMap>
+
+    <sql id="selectUserInfoVo">
+        select id,
+               wx_open_id,
+               nickname,
+               gender,
+               avatar_url,
+               phone,
+               status,
+               create_time,
+               create_by,
+               update_time,
+               update_by,
+               del_flag,
+               remark
+        from user_info
+    </sql>
+
+    <select id="selectUserInfoList" parameterType="UserInfo" resultMap="UserInfoResult">
+        <include refid="selectUserInfoVo"/>
+        <where>
+            <if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间检索 -->
+                AND date_format(create_time,'%y%m%d') &gt;= date_format(#{params.beginTime},'%y%m%d')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''"><!-- 结束时间检索 -->
+                AND date_format(create_time,'%y%m%d') &lt;= date_format(#{params.endTime},'%y%m%d')
+            </if>
+            <if test="wxOpenId != null  and wxOpenId != ''">and wx_open_id = #{wxOpenId}</if>
+            <if test="nickname != null  and nickname != ''">and nickname like concat('%', #{nickname}, '%')</if>
+            <if test="gender != null  and gender != ''">and gender = #{gender}</if>
+            <if test="avatarUrl != null  and avatarUrl != ''">and avatar_url = #{avatarUrl}</if>
+            <if test="phone != null  and phone != ''">and phone = #{phone}</if>
+            <if test="status != null  and status != ''">and status = #{status}</if>
+            and del_flag = 0
+        </where>
+    </select>
+
+
+    <select id="selectUserCountBetween" parameterType="integer" resultType="com.share.user.domain.UserCountVo">
+        SELECT
+            DATE_FORMAT(create_time, '%Y-%m') AS registerDate,
+            COUNT(id) AS `count`
+        FROM
+            user_info
+        WHERE
+            YEAR(create_time) BETWEEN #{startYear} AND #{endYear}
+        GROUP BY
+            DATE_FORMAT(create_time, '%Y-%m')
+        ORDER BY
+            registerDate
+    </select>
+</mapper>

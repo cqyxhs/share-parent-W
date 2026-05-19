@@ -1,0 +1,163 @@
+package com.share.device.service.impl;
+
+import com.alibaba.nacos.client.naming.utils.CollectionUtils;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.share.common.core.exception.ServiceException;
+import com.share.common.security.utils.SecurityUtils;
+import com.share.device.domain.Cabinet;
+import com.share.device.domain.CabinetSlot;
+import com.share.device.domain.CabinetType;
+import com.share.device.domain.PowerBank;
+import com.share.device.mapper.CabinetMapper;
+import com.share.device.mapper.CabinetSlotMapper;
+import com.share.device.mapper.CabinetTypeMapper;
+import com.share.device.service.ICabinetService;
+import com.share.device.service.IPowerBankService;
+import jakarta.annotation.Resource;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+@Service
+public class CabinetServiceImpl extends ServiceImpl<CabinetMapper, Cabinet> implements ICabinetService
+{
+    @Resource
+    private CabinetMapper cabinetMapper;
+    @Resource
+    private CabinetTypeMapper cabinetTypeMapper;
+    @Resource
+    private CabinetSlotMapper cabinetSlotMapper;
+    @Resource
+    private IPowerBankService  powerBankService;
+
+
+
+    @Override
+    public List<Cabinet> selectCabinetList(Cabinet cabinet)
+    {
+        return cabinetMapper.selectCabinetList(cabinet);
+    }
+
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public int saveCabinet(Cabinet cabinet) {
+        long count = this.count(new LambdaQueryWrapper<Cabinet>().eq(Cabinet::getCabinetNo, cabinet.getCabinetNo()));
+        if (count > 0) {
+            throw new ServiceException("该柜机编号已存在");
+        }
+        // 根据柜机类型id查询柜机类型
+        CabinetType cabinetType = cabinetTypeMapper.selectById(cabinet.getCabinetTypeId());
+
+        // 设置总插槽数量和可用插槽数量
+        cabinet.setTotalSlots(cabinetType.getTotalSlots());
+        cabinet.setFreeSlots(cabinetType.getTotalSlots());
+        cabinet.setUsedSlots(0);
+        cabinet.setAvailableNum(0);
+        cabinet.setCreateTime(new Date());
+        cabinet.setCreateBy(SecurityUtils.getUsername());
+        this.save(cabinet);
+
+        int size = cabinetType.getTotalSlots();
+        for(int i=0; i<size; i++) {
+            CabinetSlot cabinetSlot = new CabinetSlot();
+            cabinetSlot.setCabinetId(cabinet.getId());
+            cabinetSlot.setSlotNo(i+1+"");
+            cabinetSlot.setCreateTime(new Date());
+            cabinet.setCreateBy(SecurityUtils.getUsername());
+            cabinetSlotMapper.insert(cabinetSlot);
+        }
+        return 1;
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public int updateCabinet(Cabinet cabinet) {
+        // 获取旧的数据
+        Cabinet oldCabinet = this.getById(cabinet.getId());
+        if (null != oldCabinet && !"0".equals(oldCabinet.getStatus())) {
+            throw new ServiceException("该柜机已投放，无法修改");
+        }
+        //判断柜机编号是否改变
+        if (oldCabinet != null && !oldCabinet.getCabinetNo().equals(cabinet.getCabinetNo())) {
+            long count = this.count(new LambdaQueryWrapper<Cabinet>().eq(Cabinet::getCabinetNo, cabinet.getCabinetNo()));
+            if (count > 0) {
+                throw new ServiceException("该柜机编号已存在");
+            }
+        }
+
+        // 判断是否修改了柜机类型
+        if (oldCabinet != null && oldCabinet.getCabinetTypeId().longValue() != cabinet.getCabinetTypeId()) {
+            // 根据柜机类型id查询柜机类型
+            CabinetType cabinetType = cabinetTypeMapper.selectById(cabinet.getCabinetTypeId());
+
+            // 设置总插槽数量和可用插槽数量
+            cabinet.setTotalSlots(cabinetType.getTotalSlots());
+            cabinet.setTotalSlots(cabinetType.getTotalSlots());
+            cabinet.setFreeSlots(cabinetType.getTotalSlots());
+            cabinet.setUsedSlots(0);
+            cabinet.setAvailableNum(0);
+            cabinet.setUpdateTime(new Date());
+            cabinet.setUpdateBy(SecurityUtils.getUsername());
+            this.updateById(cabinet);
+
+            // 删除所有插槽
+            cabinetSlotMapper.delete(new LambdaQueryWrapper<CabinetSlot>().eq(CabinetSlot::getCabinetId, cabinet.getId()));
+            int size = cabinetType.getTotalSlots();
+            for (int i = 0; i < size; i++) {
+                CabinetSlot cabinetSlot = new CabinetSlot();
+                cabinetSlot.setCabinetId(cabinet.getId());
+                cabinetSlot.setSlotNo(i + 1 + "");
+                cabinetSlot.setCreateTime(new Date());
+                cabinet.setCreateBy(SecurityUtils.getUsername());
+                cabinetSlotMapper.insert(cabinetSlot);
+            }
+        }
+        return 1;
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public int removeCabinet(List<Long> idList) {
+        this.removeBatchByIds(idList);
+        cabinetSlotMapper.delete(new LambdaQueryWrapper<CabinetSlot>().in(CabinetSlot::getCabinetId, idList));
+        return 1;
+    }
+
+    @Override
+    public List<Cabinet> searchNoUseList(String keyword) {
+        return cabinetMapper.selectList(new LambdaQueryWrapper<Cabinet>()
+                .like(Cabinet::getCabinetNo, keyword)
+                .eq(Cabinet::getStatus, "0") //未使用
+                .eq(Cabinet::getDelFlag, "0") //存在
+        );
+    }
+
+    @Override
+    public Map<String, Object> getAllInfo(Long id) {
+        // 查询柜机信息
+        Cabinet cabinet = this.getById(id);
+
+        // 查询插槽信息
+        List<CabinetSlot> cabinetSlotList = cabinetSlotMapper.selectList(new LambdaQueryWrapper<CabinetSlot>().eq(CabinetSlot::getCabinetId, cabinet.getId()));
+        // 获取可用充电宝id列表
+        List<Long> powerBankIdList = cabinetSlotList.stream().filter(item -> null != item.getPowerBankId()).map(CabinetSlot::getPowerBankId).collect(Collectors.toList());
+        if(!CollectionUtils.isEmpty(powerBankIdList)) {
+            List<PowerBank> powerBankList = powerBankService.listByIds(powerBankIdList);
+            Map<Long,PowerBank> powerBankIdToPowerBankMap = powerBankList.stream().collect(Collectors.toMap(PowerBank::getId, PowerBank -> PowerBank));
+            cabinetSlotList.forEach(item -> item.setPowerBank(powerBankIdToPowerBankMap.get(item.getPowerBankId())));
+        }
+
+        return Map.of("cabinet", cabinet, "cabinetSlotList", cabinetSlotList);
+    }
+
+    @Override
+    public Cabinet getBtCabinetNo(String cabinetNo) {
+        return cabinetMapper.selectOne(new LambdaQueryWrapper<Cabinet>().eq(Cabinet::getCabinetNo, cabinetNo));
+    }
+}

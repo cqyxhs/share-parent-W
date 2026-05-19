@@ -1,0 +1,33 @@
+# Tomcat
+server:
+  port: 9300
+  tomcat:
+    max-swallow-size: 10MB #  检查内嵌 Tomcat 配置
+#调整 Spring Boot 配置文件
+spring:
+  application: # 应用名称
+    name: share-file
+  profiles: # 环境配置
+    active: dev
+  main:
+    allow-bean-definition-overriding: true #当遇到同样名字的时候，是否允许覆盖注册
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+  # 配置 Nacos 注册中心和配置中心
+  cloud:
+    bus:
+      enabled: false
+    nacos:
+      discovery:
+        # 服务注册地址
+        server-addr: localhost:8848
+      config:
+        # 配置中心地址
+        server-addr: localhost:8848
+        # 配置文件格式
+        file-extension: yml
+        # 共享配置
+        shared-configs:
+          - application-${spring.profiles.active}.${spring.cloud.nacos.config.file-extension}
