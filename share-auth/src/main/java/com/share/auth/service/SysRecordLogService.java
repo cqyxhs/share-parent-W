@@ -1,5 +1,6 @@
 package com.share.auth.service;
 
+import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import com.share.common.core.constant.Constants;
@@ -17,7 +18,7 @@ import com.share.system.api.domain.SysLogininfor;
 @Component
 public class SysRecordLogService
 {
-    @Autowired
+    @Resource
     private RemoteLogService remoteLogService;
 
     /**

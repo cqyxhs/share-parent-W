@@ -2,6 +2,11 @@
 server:
   port: 9205
 
+# Tencent Map Configuration
+tencent:
+  map:
+    key: ${TENCENT_MAP_KEY:H4LBZ-LQPLQ-SFU5O-4CPC5-OYDY6-7PBJ2}
+
 # Spring
 spring:
   application:

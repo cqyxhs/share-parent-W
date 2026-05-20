@@ -44,3 +44,12 @@ nbdist/
 !*/build/*.java
 !*/build/*.html
 !*/build/*.xml
+
+######################################################################
+# Environment Configuration Files (Contains Sensitive Information)
+.env
+.env.local
+.env.*.local
+application-*.yml
+application-*.properties
+*.env
