@@ -10,7 +10,7 @@ public class SubmitOrderVo {
     private String messageNo;
 
     @Schema(description = "用户Id")
-    private Long UserId;
+    private Long userId;
 
     //送货地址id
     @Schema(description = "充电宝编号")

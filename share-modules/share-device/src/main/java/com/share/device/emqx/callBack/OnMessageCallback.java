@@ -107,9 +107,8 @@ public class OnMessageCallback implements MqttCallback {
             MassageHandler massageHandler = messageHandlerFactory.getMassageHandler(topic);
             if(massageHandler!=null) {
                 String content = new String(message.getPayload());
-                // 创建JSON对象包装消息内容
-                JSONObject jsonMessage = new JSONObject();
-                jsonMessage.put("content", content);
+                // 直接解析消息内容为JSON对象
+                JSONObject jsonMessage = JSONObject.parseObject(content);
                 massageHandler.handleMessage(jsonMessage);
             }
         } catch (Exception e) {

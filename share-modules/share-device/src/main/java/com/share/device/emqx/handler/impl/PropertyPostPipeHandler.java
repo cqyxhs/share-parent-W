@@ -63,16 +63,16 @@ public class PropertyPostPipeHandler implements MassageHandler {
                 // 转换key的格式
                 switch (key) {
                     case "messageNo":
-                        parsedMessage.put("messageNo", value);
+                        parsedMessage.put("mNo", value);
                         break;
                     case "cabinetNo":
-                        parsedMessage.put("cabinetNo", value);
+                        parsedMessage.put("cNo", value);
                         break;
                     case "powerBankNo":
-                        parsedMessage.put("powerBankNo", value);
+                        parsedMessage.put("pNo", value);
                         break;
                     case "slotNo":
-                        parsedMessage.put("slotNo", value);
+                        parsedMessage.put("sNo", value);
                         break;
                     case "electricity":
                         parsedMessage.put("electricity", new BigDecimal(value));

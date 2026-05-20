@@ -60,7 +60,7 @@ public class PowerBankUnlockHandler implements MassageHandler {
         log.info("handleMessage: {}", message.toJSONString());
 
         //1 获取messageNo，基于redis防止重复提交
-        String messageNo = message.getString("messageNo");
+        String messageNo = message.getString("mNo");
 
         String key = "powerBank:unlock:"+messageNo;
         Boolean ifAbsent = redisTemplate.opsForValue().setIfAbsent(key, messageNo, 1, TimeUnit.HOURS);
@@ -73,15 +73,16 @@ public class PowerBankUnlockHandler implements MassageHandler {
         // 2 获取柜机编号CabinetNo、充电宝编号PowerBankNo、插槽编号SlotNo
             // 用户id：userId，非空判断
             //柜机编号
-        String cabinetNo = message.getString("cabinetNo");
+        String cabinetNo = message.getString("cNo");
             //充电宝编号
-        String powerBankNo = message.getString("powerBankNo");
+        String powerBankNo = message.getString("pNo");
             //插槽编号
-        String slotNo = message.getString("slotNo");
+        String slotNo = message.getString("sNo");
             //用户id
         Long userId = message.getLong("userId");
         if (StringUtils.isEmpty(cabinetNo) || StringUtils.isEmpty(powerBankNo) || StringUtils.isEmpty(slotNo) || null == userId) {
             log.info("参数为空: {}", message.toJSONString());
+            return;
         }
 
         // 3 根据柜机编号获取柜机信息

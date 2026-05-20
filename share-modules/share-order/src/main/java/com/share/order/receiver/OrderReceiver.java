@@ -83,8 +83,16 @@ public class OrderReceiver {
             //调用service方法创建订单
             orderInfoService.saveOrder(submitOrderVo);
             channel.basicAck(message.getMessageProperties().getDeliveryTag(),false);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        } catch (Exception e) {
+            log.error("订单服务：创建订单失败，消息内容：{}", content, e);
+            // 删除去重key，允许消息重试
+            redisTemplate.delete(key);
+            // 消费异常，重新入队
+            try {
+                channel.basicNack(message.getMessageProperties().getDeliveryTag(), false, true);
+            } catch (IOException ioException) {
+                log.error("订单服务：NACK失败", ioException);
+            }
         }
     }
 

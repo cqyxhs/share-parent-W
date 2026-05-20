@@ -53,7 +53,7 @@ public class PropertyPostHandler implements MassageHandler {
     public void handleMessage(JSONObject message) {
         log.info("handleMessage: {}", message.toJSONString());
         //消息编号
-        String messageNo = message.getString("messageNo");
+        String messageNo = message.getString("mNo");
         //防止重复请求
         String key = "property:post:" + messageNo;
         boolean isExist = redisTemplate.opsForValue().setIfAbsent(key, messageNo, 1, TimeUnit.HOURS);
@@ -63,11 +63,11 @@ public class PropertyPostHandler implements MassageHandler {
         }
 
         //柜机编号
-        String cabinetNo = message.getString("cabinetNo");
+        String cabinetNo = message.getString("cNo");
         //充电宝编号
-        String powerBankNo = message.getString("powerBankNo");
+        String powerBankNo = message.getString("pNo");
         //插槽编号
-        String slotNo = message.getString("slotNo");
+        String slotNo = message.getString("sNo");
         //当前电量
         BigDecimal electricity = message.getBigDecimal("electricity");
         if (StringUtils.isEmpty(cabinetNo)

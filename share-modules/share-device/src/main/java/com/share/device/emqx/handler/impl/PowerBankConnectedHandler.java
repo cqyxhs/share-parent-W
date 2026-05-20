@@ -65,7 +65,7 @@ public class PowerBankConnectedHandler implements MassageHandler {
     @Override
     public void handleMessage(JSONObject message) {
         //1 获取messageNo，防止重复提交
-        String messageNo = message.getString("messageNo");
+        String messageNo = message.getString("mNo");
         String key = "powerBank:connected:" + messageNo;
         Boolean ifAbsent = redisTemplate.opsForValue().setIfAbsent(key, messageNo, 1, TimeUnit.HOURS);
         if(Boolean.FALSE.equals(ifAbsent)) {
@@ -73,11 +73,11 @@ public class PowerBankConnectedHandler implements MassageHandler {
         }
 
         //2 获取cabinetNo  powerBankNo  slotNo  electricity
-        String cabinetNo = message.getString("cabinetNo");
+        String cabinetNo = message.getString("cNo");
         //充电宝编号
-        String powerBankNo = message.getString("powerBankNo");
+        String powerBankNo = message.getString("pNo");
         //插槽编号
-        String slotNo = message.getString("slotNo");
+        String slotNo = message.getString("sNo");
         //当前电量
         BigDecimal electricity = message.getBigDecimal("electricity");
 

@@ -17,6 +17,7 @@ import com.share.rules.domain.FeeRuleResponseVo;
 import com.share.user.api.RemoteUserInfoService;
 import com.share.user.domain.UserInfo;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.joda.time.Minutes;
 import org.springframework.beans.BeanUtils;
@@ -29,6 +30,7 @@ import java.util.*;
 /**
  * 订单Service业务层处理
  */
+@Slf4j
 @Service
 public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo> implements IOrderInfoService {
 
@@ -177,14 +179,17 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         orderInfo.setStartStationName(orderForm.getStartStationName());
         orderInfo.setStartCabinetNo(orderForm.getStartCabinetNo());
         // 费用规则
-        FeeRule feeRule = remoteFeeRuleService.getFeeRule(orderForm.getFeeRuleId(), SecurityConstants.INNER).getData();
         orderInfo.setFeeRuleId(orderForm.getFeeRuleId());
-        orderInfo.setFeeRule(feeRule.getDescription());
+        R<FeeRule> feeRuleResult = remoteFeeRuleService.getFeeRule(orderForm.getFeeRuleId(), SecurityConstants.INNER);
+        if (feeRuleResult != null && feeRuleResult.getData() != null) {
+            orderInfo.setFeeRule(feeRuleResult.getData().getDescription());
+        } else {
+            orderInfo.setFeeRule("");
+            log.warn("获取费用规则失败，feeRuleId: {}", orderForm.getFeeRuleId());
+        }
         orderInfo.setStatus("0");
         orderInfo.setCreateTime(new Date());
         orderInfo.setCreateBy(SecurityUtils.getUsername());
-        //用户昵称
-        UserInfo userInfo =  remoteUserInfoService.getInfo(orderInfo.getUserId(), SecurityConstants.INNER).getData();
 
         baseMapper.insert(orderInfo);
         return orderInfo.getId();

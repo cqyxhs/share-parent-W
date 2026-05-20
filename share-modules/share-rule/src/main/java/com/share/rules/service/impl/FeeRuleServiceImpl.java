@@ -3,6 +3,7 @@ package com.share.rules.service.impl;
 import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.share.common.core.utils.bean.BeanUtils;
 import com.share.rules.config.DroolsHelper;
 import com.share.rules.domain.FeeRule;
 import com.share.rules.domain.FeeRuleRequestForm;
@@ -13,7 +14,6 @@ import com.share.rules.mapper.FeeRuleMapper;
 import com.share.rules.service.IFeeRuleService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.kie.api.runtime.KieContainer;
 import org.kie.api.runtime.KieSession;
 import org.springframework.stereotype.Service;
 
@@ -26,8 +26,6 @@ public class FeeRuleServiceImpl extends ServiceImpl<FeeRuleMapper, FeeRule> impl
 {
     @Resource
     private FeeRuleMapper feeRuleMapper;
-    @Resource
-    private KieContainer kieContainer;
 
 
     @Override
@@ -69,11 +67,7 @@ public class FeeRuleServiceImpl extends ServiceImpl<FeeRuleMapper, FeeRule> impl
 
         //封装返回对象
         FeeRuleResponseVo feeRuleResponseVo = new FeeRuleResponseVo();
-        feeRuleResponseVo.setTotalAmount(BigDecimal.valueOf(feeRuleResponse.getTotalAmount()));
-        feeRuleResponseVo.setFreePrice(BigDecimal.valueOf(feeRuleResponse.getFreePrice()));
-        feeRuleResponseVo.setExceedPrice(BigDecimal.valueOf(feeRuleResponse.getExceedPrice()));
-        feeRuleResponseVo.setFreeDescription(feeRuleResponse.getFreeDescription());
-        feeRuleResponseVo.setExceedDescription(feeRuleResponse.getExceedDescription());
+        BeanUtils.copyProperties(feeRuleResponse, feeRuleResponseVo);
 
         return feeRuleResponseVo;
     }

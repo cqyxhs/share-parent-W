@@ -12,6 +12,9 @@ spring:
     active: dev
   main:
     allow-bean-definition-overriding: true #当遇到同样名字的时候，是否允许覆盖注册
+  data:
+    mongodb:
+      uri: "mongodb://mongo:123456@localhost:27017/share-device?authSource=admin&authMechanism=SCRAM-SHA-1"
   cloud:
     bus:
       enabled: false
