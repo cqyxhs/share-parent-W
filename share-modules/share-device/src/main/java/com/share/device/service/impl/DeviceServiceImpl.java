@@ -229,15 +229,15 @@ public class DeviceServiceImpl implements IDeviceService {
 
 
         /*
-        {"messageNo":"112233","cabinetNo":"xg xg xxx","powerBankNo":"gg001","slotNo":"1", "electricity": 85}
+        {"mNo":"112233","cNo":"xgxgxxxg","pNo":"gg001","sNo":"1","userId":1}
          */
         // 生成借取指令，弹出充电宝
         JSONObject object = new JSONObject();
         object.put("userId", SecurityContextHolder.getUserId());
-        object.put("messageNo", "mm"+ RandomUtil.randomString(8));
-        object.put("cabinetNo", cabinetNo);
-        object.put("powerBankNo", availablePowerBankVo.getPowerBankNo());
-        object.put("slotNo", availablePowerBankVo.getSlotNo());
+        object.put("mNo", "mm"+ RandomUtil.randomString(8));
+        object.put("cNo", cabinetNo);
+        object.put("pNo", availablePowerBankVo.getPowerBankNo());
+        object.put("sNo", availablePowerBankVo.getSlotNo());
         String topic = String.format(EmqxConstants.TOPIC_SCAN_SUBMIT, cabinetNo);
         emqxClientWrapper.publish(topic, object.toJSONString());
 

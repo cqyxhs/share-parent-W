@@ -1,8 +1,10 @@
 package com.share.order.api;
 
+import com.github.pagehelper.PageHelper;
 import com.share.common.core.domain.R;
 import com.share.common.core.web.controller.BaseController;
 import com.share.common.core.web.domain.AjaxResult;
+import com.share.common.core.web.page.TableDataInfo;
 import com.share.common.security.annotation.RequiresLogin;
 import com.share.common.security.utils.SecurityUtils;
 import com.share.order.domain.OrderInfo;
@@ -22,6 +24,16 @@ public class OrderInfoApiController extends BaseController
 {
     @Resource
     private IOrderInfoService orderInfoService;
+
+
+    @Operation(summary = "获取用户订单分页列表")
+    @RequiresLogin
+    @GetMapping({"/getOrderInfoList/{pageNum}/{pageSize}", "/userOrderInfoList/{pageNum}/{pageSize}"})
+    public TableDataInfo list(@PathVariable Integer pageNum, @PathVariable Integer pageSize)
+    {
+        PageHelper.startPage(pageNum, pageSize);
+        return getDataTable(orderInfoService.getOrderInfoListByUserId(SecurityUtils.getUserId()));
+    }
 
     //小程序使用
     @Operation(summary = "获取未完成订单")

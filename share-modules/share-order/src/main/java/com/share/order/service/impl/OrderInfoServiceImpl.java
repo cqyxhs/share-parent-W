@@ -74,12 +74,16 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
                 feeRuleRequestForm.setFeeRuleId(orderInfo.getFeeRuleId());
                 R<FeeRuleResponseVo> feeRuleResponseVoR =
                         remoteFeeRuleService.calculateOrderFee(feeRuleRequestForm, SecurityConstants.INNER);
-                FeeRuleResponseVo responseVo = feeRuleResponseVoR.getData();
-
-                //设置到orderInfo里面
-                orderInfo.setTotalAmount(responseVo.getTotalAmount());
-                orderInfo.setDeductAmount(new BigDecimal(0));
-                orderInfo.setRealAmount(responseVo.getTotalAmount());
+                if (feeRuleResponseVoR != null && feeRuleResponseVoR.getData() != null) {
+                    FeeRuleResponseVo responseVo = feeRuleResponseVoR.getData();
+                    orderInfo.setTotalAmount(responseVo.getTotalAmount());
+                    orderInfo.setDeductAmount(new BigDecimal(0));
+                    orderInfo.setRealAmount(responseVo.getTotalAmount());
+                } else {
+                    orderInfo.setTotalAmount(new BigDecimal(0));
+                    orderInfo.setDeductAmount(new BigDecimal(0));
+                    orderInfo.setRealAmount(new BigDecimal(0));
+                }
             } else {
                 orderInfo.setDuration(0);
                 orderInfo.setTotalAmount(new BigDecimal(0));
@@ -93,10 +97,12 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         orderInfo.setOrderBillList(orderBillList);
 
         R<UserInfo> userInfoR = remoteUserInfoService.getInfo(orderInfo.getUserId(),SecurityConstants.INNER);
-        UserInfo userInfo = userInfoR.getData();
-        UserInfoVo userInfoVo = new UserInfoVo();
-        BeanUtils.copyProperties(userInfo,userInfoVo);
-        orderInfo.setUserInfoVo(userInfoVo);
+        if (userInfoR != null && userInfoR.getData() != null) {
+            UserInfo userInfo = userInfoR.getData();
+            UserInfoVo userInfoVo = new UserInfoVo();
+            BeanUtils.copyProperties(userInfo,userInfoVo);
+            orderInfo.setUserInfoVo(userInfoVo);
+        }
 
         //返回对象
         return orderInfo;
@@ -135,12 +141,26 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         feeRuleRequestForm.setFeeRuleId(orderInfo.getFeeRuleId());
         //远程调用
         R<FeeRuleResponseVo> feeRuleResponseVoR = remoteFeeRuleService.calculateOrderFee(feeRuleRequestForm,SecurityConstants.INNER);
-        FeeRuleResponseVo feeRuleResponseVo = feeRuleResponseVoR.getData();
+
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        String freeDescription = "前5分钟免费";
+        String exceedDescription = "";
+        BigDecimal exceedPrice = BigDecimal.ZERO;
+
+        if (feeRuleResponseVoR != null && feeRuleResponseVoR.getData() != null) {
+            FeeRuleResponseVo feeRuleResponseVo = feeRuleResponseVoR.getData();
+            totalAmount = feeRuleResponseVo.getTotalAmount();
+            freeDescription = feeRuleResponseVo.getFreeDescription();
+            exceedDescription = feeRuleResponseVo.getExceedDescription();
+            exceedPrice = feeRuleResponseVo.getExceedPrice();
+        } else {
+            log.warn("计算费用失败，feeRuleId: {}", orderInfo.getFeeRuleId());
+        }
 
         //设置费用
-        orderInfo.setTotalAmount(feeRuleResponseVo.getTotalAmount());
+        orderInfo.setTotalAmount(totalAmount);
         orderInfo.setDeductAmount(new BigDecimal("0"));
-        orderInfo.setRealAmount(feeRuleResponseVo.getTotalAmount());
+        orderInfo.setRealAmount(totalAmount);
 
         if(orderInfo.getRealAmount().subtract(new BigDecimal(0)).doubleValue() == 0) {
             orderInfo.setStatus("2");
@@ -152,17 +172,16 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         //3 插入免费账单数据
         OrderBill freeOrderBill = new OrderBill();
         freeOrderBill.setOrderId(orderInfo.getId());
-        freeOrderBill.setBillItem(feeRuleResponseVo.getFreeDescription());
+        freeOrderBill.setBillItem(freeDescription);
         freeOrderBill.setBillAmount(new BigDecimal(0));
         orderBillMapper.insert(freeOrderBill);
 
         //4 插入收费账单数据（超过免费时间账单数据）
-        BigDecimal exceedPrice = feeRuleResponseVo.getExceedPrice();
         if(exceedPrice.doubleValue()>0) {
             OrderBill exceedOrderBill = new OrderBill();
             exceedOrderBill.setOrderId(orderInfo.getId());
-            exceedOrderBill.setBillItem(feeRuleResponseVo.getExceedDescription());
-            exceedOrderBill.setBillAmount(feeRuleResponseVo.getExceedPrice());
+            exceedOrderBill.setBillItem(exceedDescription);
+            exceedOrderBill.setBillAmount(exceedPrice);
             orderBillMapper.insert(exceedOrderBill);
         }
     }
@@ -227,5 +246,43 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         dataMap.put("countList", orderCountList);
 
         return dataMap;
+    }
+
+    @Override
+    public List<OrderInfo> getOrderInfoListByUserId(Long userId) {
+        //查询id所有订单列表
+        LambdaQueryWrapper<OrderInfo> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(OrderInfo::getUserId, userId);
+        wrapper.orderByDesc(OrderInfo::getId);
+        List<OrderInfo> orderInfoList = baseMapper.selectList(wrapper);
+
+        //遍历订单列表，查询订单详情
+        for (OrderInfo orderInfo : orderInfoList) {
+            //判断订单状态是0（充电中），实时计算充电时间和金额
+            if ("0".equals(orderInfo.getStatus())) {
+                int minutes = Minutes.minutesBetween(new DateTime(orderInfo.getStartTime()),
+                        new DateTime()).getMinutes();
+                if (minutes > 0) {
+                    orderInfo.setDuration(minutes);
+                    FeeRuleRequestForm feeRuleRequestForm = new FeeRuleRequestForm();
+                    feeRuleRequestForm.setDuration(minutes);
+                    feeRuleRequestForm.setFeeRuleId(orderInfo.getFeeRuleId());
+                    R<FeeRuleResponseVo> feeRuleResponseVoR =
+                            remoteFeeRuleService.calculateOrderFee(feeRuleRequestForm, SecurityConstants.INNER);
+                    if (feeRuleResponseVoR != null && feeRuleResponseVoR.getData() != null) {
+                        FeeRuleResponseVo responseVo = feeRuleResponseVoR.getData();
+                        orderInfo.setTotalAmount(responseVo.getTotalAmount());
+                        orderInfo.setDeductAmount(new BigDecimal(0));
+                        orderInfo.setRealAmount(responseVo.getTotalAmount());
+                    }
+                } else {
+                    orderInfo.setDuration(0);
+                    orderInfo.setTotalAmount(new BigDecimal(0));
+                    orderInfo.setDeductAmount(new BigDecimal(0));
+                    orderInfo.setRealAmount(new BigDecimal(0));
+                }
+            }
+        }
+        return orderInfoList;
     }
 }

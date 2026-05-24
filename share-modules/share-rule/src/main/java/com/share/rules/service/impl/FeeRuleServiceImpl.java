@@ -67,7 +67,12 @@ public class FeeRuleServiceImpl extends ServiceImpl<FeeRuleMapper, FeeRule> impl
 
         //封装返回对象
         FeeRuleResponseVo feeRuleResponseVo = new FeeRuleResponseVo();
-        BeanUtils.copyProperties(feeRuleResponse, feeRuleResponseVo);
+        feeRuleResponseVo.setTotalAmount(new BigDecimal(feeRuleResponse.getTotalAmount()));
+        feeRuleResponseVo.setFreePrice(new BigDecimal(feeRuleResponse.getFreePrice()));
+        feeRuleResponseVo.setFreeDescription(feeRuleResponse.getFreeDescription());
+        feeRuleResponseVo.setExceedPrice(new BigDecimal(feeRuleResponse.getExceedPrice()));
+        feeRuleResponseVo.setExceedDescription(feeRuleResponse.getExceedDescription());
+
 
         return feeRuleResponseVo;
     }

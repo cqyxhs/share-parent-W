@@ -17,13 +17,13 @@ import java.util.List;
         fallbackFactory = RemoteFeeRuleFallbackFactory.class)
 public interface RemoteFeeRuleService {
 
-    @PostMapping(value = "/feeRule/getFeeRuleList")
+    @PostMapping(value = "/api/feeRule/getFeeRuleList")
     R<List<FeeRule>> getFeeRuleList(@RequestBody List<Long> feeRuleIdList,@RequestHeader(SecurityConstants.FROM_SOURCE) String source);
 
-    @GetMapping(value = "/feeRule/getFeeRule/{id}")
+    @GetMapping(value = "/api/feeRule/getFeeRule/{id}")
     R<FeeRule> getFeeRule(@PathVariable("id") Long id,@RequestHeader(SecurityConstants.FROM_SOURCE) String source);
 
-    @PostMapping("/feeRule/calculateOrderFee")
+    @PostMapping("/api/feeRule/calculateOrderFee")
     R<FeeRuleResponseVo> calculateOrderFee(@RequestBody FeeRuleRequestForm feeRuleRequestForm,@RequestHeader(SecurityConstants.FROM_SOURCE) String source);
 
 }
