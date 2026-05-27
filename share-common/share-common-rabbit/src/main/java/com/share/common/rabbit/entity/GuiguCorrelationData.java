@@ -20,4 +20,5 @@ public class GuiguCorrelationData extends CorrelationData {
     private boolean isDelay = false;
     //延迟时长
     private int delayTime = 10;
+
 }
