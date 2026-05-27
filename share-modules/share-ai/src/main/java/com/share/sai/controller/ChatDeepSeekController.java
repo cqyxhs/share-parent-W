@@ -11,7 +11,7 @@ public class ChatDeepSeekController {
 
     @Resource
     private OpenAiChatModel chatModel;
-
+//改用阿里云的deepseek的模型，模型名：deepseek-v4pro
     @GetMapping("/ai/generate")
     public String generate(@RequestParam(value = "message", defaultValue = "hello")
                            String message) {
