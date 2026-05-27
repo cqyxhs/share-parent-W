@@ -22,7 +22,7 @@ public class MapServiceImpl implements IMapService {
     @Resource
     private RestTemplate restTemplate;
     @Value("${tencent.map.key}")
-    private String key;
+    private String key = "your-key";
 
     @Override
     public Double calculateDistance(String startLongitude,String startLatitude,String endLongitude,String endLatitude) {
